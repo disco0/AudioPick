@@ -54,16 +54,21 @@ function init() {
 	var default_no = document.getElementById("default_no");
 	default_no.value = stored_no;
 	navigator.mediaDevices.enumerateDevices()
-		.then(update_device_cache)
-		.catch(errorCallback);
+		.then(update_device_cache)		
+		.catch((e) => {
+			log('[ERROR!] Failed enumerateDevices during background init device_cache initialization.')
+		})
 }
-
 function errorCallback(error) {
 	log('error: '+ error);
 }
 
 function log(message) {
-	console.log('background: ' +  message);
+	console.log(
+		'%cbackground:%c ' +  message,
+		'border-radius: 0.15em; background: #55AAFF40; font-weight: 600;'
+		+ 'padding: 0.15em 0.4em; ', ''
+	);
 }
                                                                                                                                                                                                                                                                                                            
 function update_device_cache(deviceInfos) {
@@ -74,7 +79,7 @@ function update_device_cache(deviceInfos) {
 		var kind = deviceInfos[i].kind;
 		var id = deviceInfos[i].deviceId;
 		var text = deviceInfos[i].label;
-		//log('device: ' + id + ' - ' + text);
+		log('update_device_cache::device:\n\t' + id + ' - ' + text);
 		if (kind === 'audiooutput') {
 			if (id == "default") {
 				if (stored_no == 0) {
@@ -85,7 +90,7 @@ function update_device_cache(deviceInfos) {
 			} else if (id == "communications") {
 				text = "System Default Communications Device";
 			}
-			//log('audiooutput: ' + id + ' - ' + text);
+			log('update_device_cache::device::audiooutput:\n\t' + id + ' - ' + text);
 			if (text) { // only update/write cache, when we have a device label
 				var option = document.getElementById(id)
 				if (option) {
