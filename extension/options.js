@@ -38,17 +38,20 @@ function log(message) {
 }
 
 function update_default_no(e) {
-	log("update_default_no: " +  e.target.value);
+ 	console.log(e);
+	log("update_default_no: " +  e.target.value + " " + e.target.text);
 	var default_no =  bg.document.getElementById("default_no");
+	var default_name =  bg.document.getElementById("default_name");
 	default_no.value = e.target.value;
-	chrome.storage.local.set({"AP_default_no" : e.target.value});
+	default_name.value = e.target.text;
+	chrome.storage.local.set({"AP_default_name" : e.target.text});
 }
 
 function update_device_options(deviceInfos) {
 	log('update_device_options: ' + deviceInfos.length + ' device(s) total (audio/video input/output)');
 	var div = document.getElementById("device_options");
 	var select = bg.document.getElementById("device_cache");
-	var default_no = bg.document.getElementById("default_no");
+	var default_name = bg.document.getElementById("default_name");
 	while (div.firstChild) { div.removeChild(div.firstChild); }
 	for (var i = 0; i !== deviceInfos.length; ++i) {
 		var kind = deviceInfos[i].kind;
@@ -75,18 +78,19 @@ function update_device_options(deviceInfos) {
 				option = bg.document.createElement("option");
 				option.id = id;
 				option.value = text;
-				select.appendChild(option);				
+				select.appendChild(option);
 			}
 			var input = document.createElement("input");
 			input.type= "radio";
 			input.name = "device";
+			input.text = text;
 			input.id = id;
 			input.value = i;
 			input.onchange = function(e){update_default_no(e);};
 			var textNode = document.createTextNode(text);
 			var label = document.createElement("label");
-			if (i == default_no.value) {
-				log('current default_no: ' + i + ' - ' + id + ' - ' + text);
+			if (default_name && text == default_name.value) {
+				log('current default: ' + i + ' - ' + id + ' - ' + text);
 				input.checked = true;
 			}			
 			label.appendChild(input);

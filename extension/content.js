@@ -5,6 +5,7 @@
  'use strict';
  
 var sink_no = 0;
+var sink_name = 'System Default Device';
 var sink_id = 'default';
 var frame_url = location.protocol + '//'+ location.host + location.pathname;
 var frame_depth = get_depth(window.self);
@@ -36,15 +37,16 @@ function register_message_listener() {
 	chrome.runtime.onMessage.addListener(
 		function(request, sender, sendResponse) {
 			if (request.message === "browser_action_commit" ) {
-				log('Received message: browser_action_commit, sink_no: ' + request.sink_no);
+				log('Received message: browser_action_commit, sink_no: ' + request.sink_no + ', sink_name: ' + request.sink_name);
 				if (request.sink_no != undefined) {
 					sink_no = request.sink_no;
+					sink_name = request.sink_name;
 					get_devices(); // --> inspect_device_infos() --> update_all_sinks()
 				}
 			} else if (request.message == "report_sink_no") {
 				log('Received message: report_sink_no');
-				log('Reply with: sink_no: ' + sink_no);
-				sendResponse({'sink_no': sink_no});
+				log('Reply with: sink_no: ' + sink_no + ', sink_name: ' + sink_name);
+				sendResponse({'sink_no': sink_no, 'sink_name': sink_name});
 			}
 		}
 	)
@@ -95,8 +97,9 @@ function request_default_no() {
 	chrome.runtime.sendMessage({'method': 'AP_get_default_no'},
 		function(response) {
 			if (response) {
-				log('Received default_no: ' + response.default_no);
+				log('Received default_no: ' + response.default_no + ' default_name: ' + response.default_name);
 				sink_no = response.default_no;
+				sink_name = response.default_name;
 				get_devices();
 			}
 		}
@@ -122,13 +125,31 @@ function get_devices() {
 }
 
 function inspect_devices(deviceInfos) {
+	let deviceInfo;
 	log('Inspecting Devices: ' + deviceInfos.length + ' device(s) total (audio/video input/output)');
+	let found = false;
 	for (var i = 0; i != deviceInfos.length; i++) {
-		var deviceInfo = deviceInfos[i];
+		deviceInfo = deviceInfos[i];
 		//log('  Devices[' + i + ']: ' + deviceInfo.kind + ': ' + deviceInfo.deviceId);
-		if ((deviceInfo.kind == 'audiooutput') && (i == sink_no)) {
-			log('Selecting Devices[' + i + ']: ' + deviceInfo.deviceId);
+		if (deviceInfo.kind == 'audiooutput' && deviceInfo.label == sink_name) {
+			log('Selecting Devices[' + i + ']: ' + deviceInfo.label + " (" + deviceInfo.deviceId + ")");
 			sink_id = deviceInfo.deviceId;
+			sink_no = i;
+			found = true;
+			break;
+		}
+	}
+	if (!found) {
+		for (var i = 0; i != deviceInfos.length; i++) {
+			deviceInfo = deviceInfos[i];
+			//log('  Devices[' + i + ']: ' + deviceInfo.kind + ': ' + deviceInfo.deviceId);
+			if (deviceInfo.kind == 'audiooutput') {
+				log(sink_name + ' not found! Selecting Devices[' + i + ']: ' + deviceInfo.label + " (" + deviceInfo.deviceId + ")");
+				sink_id = deviceInfo.deviceId;
+				sink_no = i;
+				sink_name = deviceInfo.label;
+				break;
+			}
 		}
 	}
 	with_or_without_GUM();
